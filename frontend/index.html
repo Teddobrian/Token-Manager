@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Decentralized Token Management</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f6f9;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .token-card {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Create New Token</h2>
+        <input type="text" id="tokenName" placeholder="Token Name">
+        <input type="text" id="tokenSymbol" placeholder="Token Symbol">
+        <input type="number" id="initialSupply" placeholder="Initial Supply">
+        <button onclick="createToken()">Create Token</button>
+    </div>
+
+    <div class="container">
+        <h2>Transfer Token</h2>
+        <input type="text" id="transferSymbol" placeholder="Token Symbol">
+        <input type="text" id="transferTo" placeholder="Recipient Principal">
+        <input type="number" id="transferAmount" placeholder="Amount">
+        <button onclick="transferToken()">Transfer Token</button>
+    </div>
+
+    <div class="container">
+        <h2>Token Balances</h2>
+        <input type="text" id="balanceSymbol" placeholder="Token Symbol">
+        <input type="text" id="balanceAccount" placeholder="Account Principal">
+        <button onclick="checkBalance()">Check Balance</button>
+        <div id="balanceResult"></div>
+    </div>
+
+    <div class="container">
+        <h2>All Tokens</h2>
+        <div id="tokensList"></div>
+    </div>
+
+    <script type="module">
+        import { backend } from 'declarations/backend';
+
+const TokenManager = backend;
+        // Fungsi untuk membuat token
+        window.createToken = async () => {
+            const name = document.getElementById('tokenName').value;
+            const symbol = document.getElementById('tokenSymbol').value;
+            const initialSupply = parseInt(document.getElementById('initialSupply').value);
+
+            try {
+                const result = await TokenManager.createToken(name, symbol, initialSupply);
+                if (result.ok) {
+                    alert(`Token ${symbol} created successfully!`);
+                    loadTokens();
+                } else {
+                    alert(`Error: ${result.err}`);
+                }
+            } catch (error) {
+                console.error('Token creation failed:', error);
+                alert('Token creation failed');
+            }
+        };
+
+        // Fungsi untuk transfer token
+        window.transferToken = async () => {
+            const symbol = document.getElementById('transferSymbol').value;
+            const to = document.getElementById('transferTo').value;
+            const amount = parseInt(document.getElementById('transferAmount').value);
+
+            try {
+                const result = await TokenManager.transferToken(symbol, to, amount);
+                if (result.ok) {
+                    alert(`Transferred ${amount} ${symbol} tokens`);
+                } else {
+                    alert(`Error: ${result.err}`);
+                }
+            } catch (error) {
+                console.error('Token transfer failed:', error);
+                alert('Token transfer failed');
+            }
+        };
+
+        // Fungsi untuk mengecek saldo
+        window.checkBalance = async () => {
+            const symbol = document.getElementById('balanceSymbol').value;
+            const account = document.getElementById('balanceAccount').value;
+            const resultDiv = document.getElementById('balanceResult');
+
+            try {
+                const balance = await TokenManager.getTokenBalance(symbol, account);
+                resultDiv.textContent = balance 
+                    ? `Balance: ${balance} ${symbol}` 
+                    : 'No balance found';
+            } catch (error) {
+                console.error('Balance check failed:', error);
+                resultDiv.textContent = 'Balance check failed';
+            }
+        };
+
+        // Fungsi untuk memuat daftar token
+        async function loadTokens() {
+            const tokensList = document.getElementById('tokensList');
+            tokensList.innerHTML = '';
+
+            try {
+                const tokens = await TokenManager.getAllTokens();
+                tokens.forEach(([symbol, token]) => {
+                    const tokenDiv = document.createElement('div');
+                    tokenDiv.className = 'token-card';
+                    tokenDiv.innerHTML = `
+                        <strong>Name:</strong> ${token.name}<br>
+                        <strong>Symbol:</strong> ${symbol}<br>
+                        <strong>Total Supply:</strong> ${token.totalSupply}
+                    `;
+                    tokensList.appendChild(tokenDiv);
+                });
+            } catch (error) {
+                console.error('Failed to load tokens:', error);
+            }
+        }
+
+        // Muat token saat halaman dimuat
+        loadTokens();
+    </script>
+</body>
+</html>
